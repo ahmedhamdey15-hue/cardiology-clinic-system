@@ -1199,13 +1199,24 @@ const adminApp = {
             hidden.value = lines;
         },
 
-        printPrescription() {
+        async printPrescription() {
             const patientName = document.getElementById('d_patient_name')?.textContent || '';
             const fileNum = document.getElementById('d_file_number')?.textContent || '';
             const diagnosis = document.getElementById('d_doctor_diagnosis')?.value || '';
             const notes = document.getElementById('d_prescription')?.value || '';
             const today = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-            const doctorName = document.getElementById('topbar-username')?.textContent || '';
+            
+            let doctorName = document.getElementById('topbar-username')?.textContent || '';
+            let clinicName = 'عيادة القلب';
+            
+            try {
+                const res = await fetch(`${API_BASE}/settings`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    if (settings.clinic_name) clinicName = settings.clinic_name;
+                    if (settings.doctor_name) doctorName = settings.doctor_name;
+                }
+            } catch(e) {}
 
             const medRows = prescriptionItems.length
                 ? prescriptionItems.map((m, i) => `
@@ -1247,7 +1258,7 @@ const adminApp = {
 <div class="page">
   <div class="header">
     <div>
-      <div class="clinic-name">🫀 عيادة القلب</div>
+      <div class="clinic-name">🫀 ${clinicName}</div>
       <div class="clinic-sub">التاريخ: ${today}</div>
     </div>
     <div class="rx-symbol">℞</div>
