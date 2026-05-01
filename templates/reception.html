@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة الاستقبال - عيادة القلب</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <h2><i class="icon">🏨</i> شاشة الاستقبال</h2>
+            <ul class="nav-links">
+                <li class="active" id="li-new-visit"><a href="#" id="nav-new-visit">تسجيل حجز جديد</a></li>
+                <li><a href="#" onclick="document.getElementById('add-patient-modal').style.display='flex'">+ إضافة مريض
+                        جديد</a></li>
+                <li><a href="#" onclick="themeApp.openSettings(); return false;" style="color:var(--primary-color);">🎨
+                        ألوان النظام</a></li>
+                <li><a href="#" id="dark-mode-toggle-btn" onclick="themeApp.toggleDarkMode(); return false;">🌙 الوضع
+                        الليلي</a></li>
+                <li id="li-queue"><a href="#" id="nav-queue">قائمة انتظار اليوم</a></li>
+                <li id="li-weekly"><a href="#" id="nav-weekly">الجدول الأسبوعي</a></li>
+                <li id="li-daily-report"><a href="#" id="nav-daily-report">تقرير اليوم</a></li>
+                <li><a href="/logout" style="color:var(--danger)">تسجيل الخروج</a></li>
+                <li><a href="/">العودة للرئيسية</a></li>
+            </ul>
+        </aside>
+
+        <main class="content-area">
+            <!-- New Visit Panel -->
+            <div class="panel" id="panel-new-visit">
+                <h3>تسجيل حجز جديد لمريض مسجل أو جديد</h3>
+                <form id="form-new-visit">
+                    <div class="form-group"
+                        style="background:var(--item-bg); padding:15px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:20px;">
+                        <label>حالة المريض</label>
+                        <div style="display: flex; gap: 20px; align-items: center;">
+                            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="patient_type" value="existing" checked> مريض مسجل مسبقاً
+                            </label>
+                            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="patient_type" value="new"> إضافة مريض جديد
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Existing Patient Section -->
+                    <div id="section-existing-patient">
+                        <div class="form-group">
+                            <label>رقم ملف المريض <span style="color:red">*</span></label>
+                            <div class="search-row">
+                                <input type="text" id="visit_patient_file" placeholder="أدخل رقم الملف للبحث..."
+                                    required>
+                                <button type="button" class="btn btn-secondary" id="btn-search-patient">بحث</button>
+                            </div>
+                            <div id="patient_info_display" class="hidden"
+                                style="margin-top: 15px; padding: 15px; background: var(--input-bg); border-radius: 8px; border-right: 4px solid var(--primary-color);">
+                                <!-- Patient info will appear here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Patient Section -->
+                    <div id="section-new-patient" class="hidden"
+                        style="background:var(--card-bg); padding:15px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:20px;">
+                        <h4 style="margin-top:0; margin-bottom:15px; color:var(--primary-color);">بيانات المريض الجديد
+                        </h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>الاسم الرباعي <span style="color:red">*</span></label>
+                                <input type="text" id="patient_name">
+                            </div>
+                            <div class="form-group">
+                                <label>رقم الهاتف</label>
+                                <input type="tel" id="patient_phone">
+                            </div>
+                            <div class="form-group">
+                                <label>العنوان</label>
+                                <input type="text" id="patient_address">
+                            </div>
+                            <div class="form-group">
+                                <label>السن</label>
+                                <input type="number" id="patient_age">
+                            </div>
+                            <div class="form-group">
+                                <label>النوع</label>
+                                <select id="patient_gender">
+                                    <option value="ذكر">ذكر</option>
+                                    <option value="أنثى">أنثى</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>نوع الكشف</label>
+                            <select id="visit_type" required>
+                                <option value="كشف جديد">كشف جديد</option>
+                                <option value="إعادة">إعادة</option>
+                                <option value="إستشارة">إستشارة</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>تكلفة الكشف (جنيه)</label>
+                            <input type="number" id="visit_cost" required value="200">
+                        </div>
+                        <div class="form-group">
+                            <label>تاريخ الحجز (اختر من النتيجة)</label>
+                            <input type="date" id="visit_date" required style="cursor: pointer;">
+                        </div>
+                        <div class="form-group">
+                            <label>موعد الحجز (ساعة رقمية)</label>
+                            <input type="time" id="visit_time" required step="900">
+                            <!-- Allows choosing time in 15-minute intervals -->
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">تأكيد الحجز والإضافة للدور</button>
+                </form>
+            </div>
+
+
+
+            <!-- Queue Panel -->
+            <div class="panel hidden" id="panel-queue">
+                <div class="header-action">
+                    <h3>قائمة الانتظار وترتيب الدور اليوم</h3>
+                    <button class="btn btn-secondary" onclick="receptionApp.loadQueue()">تحديث القائمة</button>
+                </div>
+                <ul class="queue-list" id="queue-list-container">
+                    <div style="text-align:center; padding: 20px; color: var(--text-muted);">جاري التحميل...</div>
+                </ul>
+            </div>
+
+            <!-- Weekly Schedule Panel -->
+            <div class="panel hidden" id="panel-weekly">
+                <div class="header-action">
+                    <h3>&#128197; الجدول الأسبوعي للحجوزات القادمة</h3>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-secondary" onclick="receptionApp.loadWeekly()">تحديث</button>
+                        <button class="btn" onclick="receptionApp.printWeekly()">&#128424; طباعة الجدول</button>
+                    </div>
+                </div>
+                <div id="weekly-container">
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);">جاري تحميل الجدول...</div>
+                </div>
+            </div>
+
+            <!-- Daily Report Panel -->
+            <div class="panel hidden" id="panel-daily-report">
+                <div class="header-action">
+                    <h3>&#128203; تقرير الحجوزات</h3>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="date" id="report_date"
+                            style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); cursor:pointer;">
+                        <button class="btn btn-secondary" onclick="receptionApp.loadDailyReport()">عرض التقرير</button>
+                        <button class="btn" onclick="receptionApp.printDailyReport()">&#128424; طباعة</button>
+                    </div>
+                </div>
+                <div id="daily-report-container">
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);">اختر تاريخًا واضغط عرض التقرير
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Visit Modal -->
+    <div id="edit-modal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div
+            style="background:var(--modal-bg); color:var(--text-main); border-radius:16px; padding:30px; width:420px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0; color:var(--primary-color);">تعديل الحجز</h3>
+            <input type="hidden" id="edit_visit_id">
+            <div class="form-group">
+                <label>نوع الكشف</label>
+                <select id="edit_visit_type">
+                    <option value="كشف جديد">كشف جديد</option>
+                    <option value="إعادة">إعادة</option>
+                    <option value="إستشارة">إستشارة</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>تاريخ الحجز</label>
+                <input type="date" id="edit_visit_date" style="cursor:pointer;">
+            </div>
+            <div class="form-group">
+                <label>وقت الحجز</label>
+                <input type="time" id="edit_visit_time" step="900">
+            </div>
+            <div class="form-group">
+                <label>التكلفة (جنيه)</label>
+                <input type="number" id="edit_visit_cost">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" onclick="receptionApp.saveEditVisit()">حفظ التعديل</button>
+                <button class="btn btn-secondary" onclick="receptionApp.closeEditModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            receptionApp.init();
+        });
+    </script>
+</body>
+
+</html>

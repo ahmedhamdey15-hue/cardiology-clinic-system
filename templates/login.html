@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - عيادة القلب</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body class="home-body">
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-circle" style="margin-bottom: 20px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z">
+                    </path>
+                    <path d="M3.5 12h4l2 5 4-10 2 5h5"></path>
+                </svg>
+            </div>
+            <h2 style="color: var(--text-main); margin-bottom: 30px;">نظام إدارة العيادة</h2>
+
+            <form id="login-form">
+                <div class="form-group" style="text-align: right;">
+                    <label>اسم المستخدم</label>
+                    <input type="text" id="username" required dir="ltr" style="text-align: left;">
+                </div>
+                <div class="form-group" style="text-align: right;">
+                    <label>كلمة المرور</label>
+                    <input type="password" id="password" required dir="ltr" style="text-align: left;">
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 20px;">الدخول للنظام</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = 'جاري التحقق...';
+
+            const data = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    showToast(result.message);
+                    setTimeout(() => {
+                        window.location.href = result.redirect || '/';
+                    }, 500);
+                } else {
+                    showToast(result.error || 'خطأ في تسجيل الدخول', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'الدخول للنظام';
+                }
+            } catch (error) {
+                showToast('خطأ في الاتصال بالسيرفر', 'error');
+                btn.disabled = false;
+                btn.textContent = 'الدخول للنظام';
+            }
+        });
+    </script>
+</body>
+
+</html>

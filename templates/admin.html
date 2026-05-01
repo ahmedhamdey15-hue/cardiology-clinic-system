@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - عيادة القلب</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        .role-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .role-admin {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .role-doctor {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .role-assistant {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .role-receptionist {
+            background: #faf5ff;
+            color: #7c3aed;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        }
+
+        .users-table th {
+            background: var(--table-header-bg);
+            padding: 12px 16px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .users-table td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .users-table tr:hover td {
+            background: var(--table-row-hover);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .stat-card p {
+            margin: 4px 0 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: var(--modal-bg);
+            color: var(--text-main);
+            border-radius: 16px;
+            padding: 32px;
+            width: 440px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <h2><i class="icon">⚙️</i> لوحة الإدارة</h2>
+            <ul class="nav-links">
+                <li class="active"><a href="/admin">إدارة المستخدمين</a></li>
+                <li><a href="#" onclick="openSystemSettingsModal(); return false;" style="color:#f59e0b;">⚙️ إعدادات النظام (WhatsApp/SMS)</a></li>
+                <li><a href="#" onclick="themeApp.openSettings(); return false;" style="color:var(--primary-color);">🎨
+                        ألوان النظام</a></li>
+                <li><a href="#" id="dark-mode-toggle-btn" onclick="themeApp.toggleDarkMode(); return false;">🌙 الوضع
+                        الليلي</a></li>
+                <li><a href="/doctor">شاشة الطبيب</a></li>
+                <li><a href="/reception">شاشة الاستقبال</a></li>
+                <li><a href="/assistant">شاشة المساعد</a></li>
+                <li><a href="/logout" style="color:var(--danger)">تسجيل الخروج</a></li>
+            </ul>
+            <div style="margin-top:auto; padding:10px; border-top:1px solid rgba(255,255,255,0.1);">
+                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin:0;">مسؤول النظام</p>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div class="panel">
+                <div class="header-action" style="margin-bottom:24px;">
+                    <h3>👥 إدارة المستخدمين والصلاحيات</h3>
+                    <button class="btn" onclick="adminApp.openAddModal()">+ إضافة مستخدم جديد</button>
+                </div>
+
+                <!-- Stats row -->
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="stat-total">-</h3>
+                        <p>إجمالي المستخدمين</p>
+                    </div>
+                    <div class="stat-card" style="border-top-color:#1d4ed8;">
+                        <h3 id="stat-doctors" style="color:#1d4ed8;">-</h3>
+                        <p>أطباء</p>
+                    </div>
+                    <div class="stat-card" style="border-top-color:#16a34a;">
+                        <h3 id="stat-assistants" style="color:#16a34a;">-</h3>
+                        <p>مساعدون</p>
+                    </div>
+                    <div class="stat-card" style="border-top-color:#7c3aed;">
+                        <h3 id="stat-reception" style="color:#7c3aed;">-</h3>
+                        <p>موظفو استقبال</p>
+                    </div>
+                </div>
+
+                <!-- Users table -->
+                <div id="users-container">
+                    <div style="text-align:center;padding:30px;color:#6b7280;">جاري التحميل...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3 id="modal-title" style="margin-top:0; color:var(--primary-color);">إضافة مستخدم جديد</h3>
+            <input type="hidden" id="modal_user_id">
+
+            <div class="form-group">
+                <label>الاسم الكامل <span style="color:red">*</span></label>
+                <input type="text" id="modal_name" placeholder="مثال: د. أحمد محمد">
+            </div>
+            <div class="form-group">
+                <label>اسم المستخدم (للدخول) <span style="color:red">*</span></label>
+                <input type="text" id="modal_username" placeholder="مثال: doctor1" dir="ltr" style="text-align:left;">
+            </div>
+            <div class="form-group">
+                <label>الصلاحية / الدور <span style="color:red">*</span></label>
+                <select id="modal_role">
+                    <option value="doctor">🩺 طبيب — يدخل شاشة الطبيب</option>
+                    <option value="assistant">🩹 مساعد طبيب — يدخل شاشة المساعد</option>
+                    <option value="receptionist">🏨 موظف استقبال — يدخل شاشة الاستقبال</option>
+                    <option value="admin">⚙️ مدير / طبيب رئيسي — كل الصلاحيات</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="password-label">كلمة المرور <span style="color:red">*</span></label>
+                <input type="password" id="modal_password" placeholder="كلمة المرور" dir="ltr" style="text-align:left;">
+                <small id="password-hint" style="color:#6b7280; display:none;">اتركها فارغة إذا لم تريد تغيير كلمة
+                    المرور</small>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:24px;">
+                <button class="btn" onclick="adminApp.saveUser()" style="flex:1;">حفظ</button>
+                <button class="btn btn-secondary" onclick="adminApp.closeModal()" style="flex:1;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Settings Modal (SMS/WhatsApp) -->
+    <div id="settings-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:var(--primary-color);">إعدادات النظام (WhatsApp / SMS)</h3>
+            <div class="form-group">
+                <label>رابط مزود خدمة الواتساب (WhatsApp API URL)</label>
+                <input type="text" id="setting_whatsapp_url" placeholder="https://api.whatsapp.com/send" dir="ltr" style="text-align:left;">
+            </div>
+            <div class="form-group">
+                <label>مفتاح التوثيق للواتساب (WhatsApp API Token)</label>
+                <input type="password" id="setting_whatsapp_token" placeholder="Bearer Token" dir="ltr" style="text-align:left;">
+            </div>
+            <div class="form-group">
+                <label>رابط مزود خدمة الرسائل القصيرة (SMS API URL)</label>
+                <input type="text" id="setting_sms_url" placeholder="https://api.sms-provider.com" dir="ltr" style="text-align:left;">
+            </div>
+            <div class="form-group">
+                <label>رسالة تأكيد الحجز الافتراضية</label>
+                <textarea id="setting_booking_msg" rows="3" placeholder="مرحباً [الاسم]، تم تأكيد حجزك يوم [التاريخ]."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:24px;">
+                <button class="btn" onclick="saveSystemSettings()" style="flex:1;">حفظ الإعدادات</button>
+                <button class="btn btn-secondary" onclick="closeSystemSettingsModal()" style="flex:1;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { adminApp.init(); });
+
+        async function openSystemSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'flex';
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                document.getElementById('setting_whatsapp_url').value = data.whatsapp_url || '';
+                document.getElementById('setting_whatsapp_token').value = data.whatsapp_token || '';
+                document.getElementById('setting_sms_url').value = data.sms_url || '';
+                document.getElementById('setting_booking_msg').value = data.booking_msg || '';
+            } catch(e) {
+                console.error('Error fetching settings:', e);
+            }
+        }
+
+        function closeSystemSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        async function saveSystemSettings() {
+            const data = {
+                whatsapp_url: document.getElementById('setting_whatsapp_url').value,
+                whatsapp_token: document.getElementById('setting_whatsapp_token').value,
+                sms_url: document.getElementById('setting_sms_url').value,
+                booking_msg: document.getElementById('setting_booking_msg').value
+            };
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                alert(result.message || 'تم الحفظ');
+                closeSystemSettingsModal();
+            } catch(e) {
+                alert('فشل حفظ الإعدادات');
+            }
+        }
+    </script>
+</body>
+
+</html>
