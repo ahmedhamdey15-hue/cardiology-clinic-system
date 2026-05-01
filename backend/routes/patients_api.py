@@ -29,7 +29,9 @@ def search_patients():
         return jsonify([])
         
     if query.isdigit():
-        patients = Patient.query.filter(Patient.file_number == int(query)).all()
+        patients = Patient.query.filter(
+            (Patient.file_number == int(query)) | (Patient.phone.ilike(f'%{query}%'))
+        ).all()
     else:
         patients = Patient.query.filter(Patient.name.ilike(f'%{query}%')).all()
         

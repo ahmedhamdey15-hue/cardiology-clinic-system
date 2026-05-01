@@ -69,7 +69,7 @@ const receptionApp = {
 
     async searchPatient() {
         const query = document.getElementById('visit_patient_file').value;
-        if (!query) return showToast('برجاء إدخال رقم الملف أو اسم المريض', 'error');
+        if (!query) return showToast('برجاء إدخال رقم الملف أو الاسم أو الموبايل', 'error');
 
         try {
             const res = await fetch(`${API_BASE}/patients/search?q=${encodeURIComponent(query)}`);
