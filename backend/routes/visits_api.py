@@ -47,6 +47,7 @@ def get_today_queue():
     
     queue = []
     for v in visits:
+        has_unbilled = any(not svc.billed for svc in v.extra_services)
         queue.append({
             'visit_id': v.id,
             'patient_name': v.patient.name,
@@ -54,7 +55,8 @@ def get_today_queue():
             'appointment_time': v.appointment_time,
             'status': v.status,
             'visit_type': v.visit_type,
-            'is_urgent': v.is_urgent
+            'is_urgent': v.is_urgent,
+            'has_unbilled_services': has_unbilled
         })
     return jsonify(queue)
 

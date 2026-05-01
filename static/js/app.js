@@ -251,11 +251,11 @@ const receptionApp = {
                     case 'completed': statusText = 'تم الكشف ✓'; statusClass = 'status-completed'; break;
                 }
 
-                const billBtn = q.status === 'completed' ? `
+                const billBtn = (q.has_unbilled_services) ? `
                     <button onclick="receptionApp.billExtraServices(${q.visit_id}, '${q.patient_name}')"
-                        style="margin-top:6px; background:#f97316; color:#fff; border:none; border-radius:6px;
-                        padding:4px 12px; cursor:pointer; font-size:0.8rem; font-family:inherit;">
-                        💰 تحصيل الخدمات الإضافية
+                        style="margin-top:6px; background:#ef4444; color:#fff; border:none; border-radius:6px;
+                        padding:6px 12px; cursor:pointer; font-size:0.85rem; font-weight:bold; font-family:inherit; box-shadow: 0 0 8px rgba(239,68,68,0.6);">
+                        🚨 خدمات إضافية غير محصّلة
                     </button>` : '';
 
                 container.innerHTML += `
