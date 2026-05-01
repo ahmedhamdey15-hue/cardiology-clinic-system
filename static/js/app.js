@@ -99,8 +99,13 @@ const receptionApp = {
             return showToast('رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر', 'error');
         }
 
+        const name = document.getElementById('patient_name').value.trim();
+        if (!name || name.split(' ').filter(p => p.trim() !== '').length < 3) {
+            return showToast('يجب إدخال اسم المريض ثلاثياً على الأقل', 'error');
+        }
+
         const data = {
-            name: document.getElementById('patient_name').value,
+            name: name,
             phone: phone,
             address: document.getElementById('patient_address').value,
             age: document.getElementById('patient_age').value,
@@ -134,9 +139,11 @@ const receptionApp = {
 
         // If new patient, register first
         if (isNew) {
-            const name = document.getElementById('patient_name').value;
+            const name = document.getElementById('patient_name').value.trim();
             const phone = document.getElementById('patient_phone').value;
-            if (!name) return showToast('برجاء إدخال اسم المريض', 'error');
+            if (!name || name.split(' ').filter(p => p.trim() !== '').length < 3) {
+                return showToast('يجب إدخال اسم المريض ثلاثياً على الأقل', 'error');
+            }
             if (phone && (!phone.startsWith('0') || phone.length !== 11 || isNaN(phone))) {
                 return showToast('رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر', 'error');
             }

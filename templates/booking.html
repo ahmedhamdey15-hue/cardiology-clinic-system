@@ -20,7 +20,7 @@
     <form id="bookingForm" class="space-y-4">
         <div>
             <label class="block text-sm font-medium text-gray-700">الاسم بالكامل</label>
-            <input type="text" id="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+            <input type="text" id="name" required pattern="^(\S+\s+){2,}\S+$" title="يجب أن يكون الاسم ثلاثياً على الأقل" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700">رقم الهاتف (للتواصل عبر الواتساب)</label>

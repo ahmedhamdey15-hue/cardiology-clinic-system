@@ -10,6 +10,11 @@ booking_api_bp = Blueprint('booking_api', __name__)
 def create_booking():
     # Public endpoint for patients to request a booking
     data = request.json
+    
+    name = data.get('name', '').strip()
+    if not name or len(name.split()) < 3:
+        return jsonify({'error': 'يجب إدخال الاسم ثلاثياً على الأقل'}), 400
+
     try:
         desired_date = datetime.strptime(data.get('desired_date'), '%Y-%m-%d').date()
     except (ValueError, TypeError):

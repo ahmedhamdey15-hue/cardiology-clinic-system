@@ -73,7 +73,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>الاسم الرباعي <span style="color:red">*</span></label>
-                                <input type="text" id="patient_name">
+                                <input type="text" id="patient_name" required pattern="^(\S+\s+){2,}\S+$" title="يجب أن يكون الاسم ثلاثياً على الأقل">
                             </div>
                             <div class="form-group">
                                 <label>رقم الهاتف</label>
