@@ -15,6 +15,10 @@ def create_booking():
     except (ValueError, TypeError):
         return jsonify({'error': 'تاريخ غير صالح'}), 400
 
+    phone = data.get('phone', '')
+    if not phone or not phone.startswith('0') or len(phone) != 11 or not phone.isdigit():
+        return jsonify({'error': 'رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر (0)'}), 400
+
     new_booking = OnlineBooking(
         name=data.get('name'),
         phone=data.get('phone'),

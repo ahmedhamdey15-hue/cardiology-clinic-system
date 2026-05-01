@@ -94,9 +94,14 @@ const receptionApp = {
 
     async createPatient(e) {
         e.preventDefault();
+        const phone = document.getElementById('patient_phone').value;
+        if (phone && (!phone.startsWith('0') || phone.length !== 11 || isNaN(phone))) {
+            return showToast('رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر', 'error');
+        }
+
         const data = {
             name: document.getElementById('patient_name').value,
-            phone: document.getElementById('patient_phone').value,
+            phone: phone,
             address: document.getElementById('patient_address').value,
             age: document.getElementById('patient_age').value,
             gender: document.getElementById('patient_gender').value,
@@ -130,7 +135,11 @@ const receptionApp = {
         // If new patient, register first
         if (isNew) {
             const name = document.getElementById('patient_name').value;
+            const phone = document.getElementById('patient_phone').value;
             if (!name) return showToast('برجاء إدخال اسم المريض', 'error');
+            if (phone && (!phone.startsWith('0') || phone.length !== 11 || isNaN(phone))) {
+                return showToast('رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر', 'error');
+            }
 
             try {
                 const pRes = await fetch(`${API_BASE}/patients`, {
@@ -138,7 +147,7 @@ const receptionApp = {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         name,
-                        phone: document.getElementById('patient_phone').value,
+                        phone: phone,
                         address: document.getElementById('patient_address').value,
                         age: document.getElementById('patient_age').value,
                         gender: document.getElementById('patient_gender').value,

@@ -60,6 +60,10 @@ def get_patient(file_number):
 @login_required
 def create_patient():
     data = request.json
+    
+    phone = data.get('phone', '')
+    if phone and (not phone.startswith('0') or len(phone) != 11 or not phone.isdigit()):
+        return jsonify({'error': 'رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر (0)'}), 400
         
     new_patient = Patient(
         name=data.get('name'),
