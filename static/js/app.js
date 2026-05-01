@@ -68,28 +68,54 @@ const receptionApp = {
     },
 
     async searchPatient() {
-        const fileNumber = document.getElementById('visit_patient_file').value;
-        if (!fileNumber) return showToast('برجاء إدخال رقم الملف', 'error');
+        const query = document.getElementById('visit_patient_file').value;
+        if (!query) return showToast('برجاء إدخال رقم الملف أو اسم المريض', 'error');
 
         try {
-            const res = await fetch(`${API_BASE}/patients/${fileNumber}`);
+            const res = await fetch(`${API_BASE}/patients/search?q=${encodeURIComponent(query)}`);
             const display = document.getElementById('patient_info_display');
             if (res.ok) {
-                const data = await res.json();
-                display.innerHTML = `
-                    <strong>الاسم:</strong> ${data.name} <br>
-                    <strong>السن:</strong> ${data.age} | <strong>النوع:</strong> ${data.gender} <br>
-                    <strong>هاتف:</strong> ${data.phone || 'غير مسجل'} | <strong>العنوان:</strong> ${data.address || 'غير مسجل'}
-                `;
-                display.classList.remove('hidden');
-                showToast('تم العثور على المريض');
+                const results = await res.json();
+                if (results.length === 0) {
+                    display.classList.add('hidden');
+                    return showToast('المريض غير مسجل. يرجى التأكد من الاسم أو الرقم.', 'error');
+                }
+                
+                if (results.length === 1) {
+                    this.selectSearchedPatient(results[0].file_number, results[0].name, results[0].age, results[0].gender, results[0].phone, results[0].address);
+                    showToast('تم العثور على المريض');
+                } else {
+                    let listHtml = '<strong>نتائج البحث:</strong> (اختر مريض)<ul style="list-style:none; padding:0; margin-top:10px;">';
+                    results.forEach(p => {
+                        const safeName = p.name.replace(/'/g, "\\'");
+                        const safeAddress = (p.address || '').replace(/'/g, "\\'");
+                        listHtml += `<li style="padding:10px; border:1px solid var(--border-color); margin-bottom:5px; border-radius:6px; cursor:pointer; background:var(--input-bg);"
+                                      onclick="receptionApp.selectSearchedPatient(${p.file_number}, '${safeName}', '${p.age}', '${p.gender}', '${p.phone || ''}', '${safeAddress}')">
+                                      ${p.name} - ملف: ${p.file_number} - هاتف: ${p.phone || '--'}
+                                     </li>`;
+                    });
+                    listHtml += '</ul>';
+                    display.innerHTML = listHtml;
+                    display.classList.remove('hidden');
+                }
             } else {
                 display.classList.add('hidden');
-                showToast('المريض غير مسجل. يرجى تسجيله أولاً.', 'error');
+                showToast('خطأ في البحث', 'error');
             }
         } catch (error) {
             showToast('حدث خطأ في الاتصال', 'error');
         }
+    },
+
+    selectSearchedPatient(file_number, name, age, gender, phone, address) {
+        document.getElementById('visit_patient_file').value = file_number;
+        const display = document.getElementById('patient_info_display');
+        display.innerHTML = `
+            <strong>الاسم:</strong> ${name} <br>
+            <strong>السن:</strong> ${age} | <strong>النوع:</strong> ${gender} <br>
+            <strong>هاتف:</strong> ${phone || 'غير مسجل'} | <strong>العنوان:</strong> ${address || 'غير مسجل'}
+        `;
+        display.classList.remove('hidden');
     },
 
     async createPatient(e) {

@@ -21,6 +21,31 @@ def get_patients():
         })
     return jsonify(result)
 
+@patients_api_bp.route('/api/patients/search', methods=['GET'])
+@login_required
+def search_patients():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([])
+        
+    if query.isdigit():
+        patients = Patient.query.filter(Patient.file_number == int(query)).all()
+    else:
+        patients = Patient.query.filter(Patient.name.ilike(f'%{query}%')).all()
+        
+    result = []
+    for p in patients:
+        result.append({
+            'file_number': p.file_number,
+            'name': p.name,
+            'phone': p.phone,
+            'address': p.address,
+            'age': p.age,
+            'gender': p.gender
+        })
+    return jsonify(result)
+
+
 @patients_api_bp.route('/api/patients/<int:file_number>', methods=['GET'])
 @login_required
 def get_patient(file_number):
