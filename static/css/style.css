@@ -358,7 +358,7 @@ textarea {
 
 .queue-item.active {
     border-color: var(--primary-color);
-    background: #eff6ff;
+    background: rgba(37, 99, 235, 0.1);
 }
 
 .queue-info.left {
@@ -375,11 +375,11 @@ textarea {
 }
 
 .file-pill {
-    background: #e5e7eb;
+    background: var(--border-color);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.8rem;
-    color: #4b5563;
+    color: var(--text-main);
 }
 
 .queue-info p {
@@ -439,10 +439,10 @@ textarea {
 }
 
 .history-grid-info div {
-    background: white;
+    background: var(--input-bg);
     padding: 8px;
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
 }
 
 .history-full-row {
@@ -506,3 +506,18 @@ textarea {
     margin: 0;
     padding: 0;
 }
+
+/* Dark mode overrides for hardcoded badges */
+[data-theme="dark"] .card-reception .card-icon { background: rgba(79, 70, 229, 0.2); color: #818cf8; }
+[data-theme="dark"] .card-assistant .card-icon { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+[data-theme="dark"] .card-doctor .card-icon { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+
+[data-theme="dark"] .status-waiting { background: rgba(217, 119, 6, 0.2); color: #fbbf24; }
+[data-theme="dark"] .status-with-assistant { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+[data-theme="dark"] .status-with-doctor { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+[data-theme="dark"] .status-completed { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+
+[data-theme="dark"] .role-admin { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+[data-theme="dark"] .role-doctor { background: rgba(29, 78, 216, 0.2); color: #60a5fa; }
+[data-theme="dark"] .role-assistant { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+[data-theme="dark"] .role-receptionist { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
