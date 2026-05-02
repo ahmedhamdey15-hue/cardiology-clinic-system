@@ -36,6 +36,15 @@ const receptionApp = {
             this.switchTab(e, 'daily-report');
             document.getElementById('report_date').valueAsDate = new Date();
         });
+        const navOnline = document.getElementById('nav-online-bookings');
+        if (navOnline) {
+            navOnline.addEventListener('click', (e) => {
+                this.switchTab(e, 'online-bookings');
+                this.loadOnlineBookings('pending');
+            });
+            this.pollOnlineBookings();
+            setInterval(() => this.pollOnlineBookings(), 30000);
+        }
 
         // Toggle between existing and new patient
         document.querySelectorAll('input[name="patient_type"]').forEach(radio => {
@@ -58,7 +67,122 @@ const receptionApp = {
         if (dateInput) dateInput.valueAsDate = new Date();
     },
 
-    switchTab(e, tabId) {
+    async pollOnlineBookings() {
+        try {
+            const res = await fetch(`${API_BASE}/booking?status=pending`);
+            if (res.ok) {
+                const pending = await res.json();
+                const badge = document.getElementById('online-bookings-badge');
+                if (badge) {
+                    if (pending.length > 0) {
+                        badge.style.display = 'inline-block';
+                        badge.textContent = pending.length;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        } catch(e) {}
+    },
+
+    async loadOnlineBookings(status) {
+        const container = document.getElementById('online-bookings-container');
+        if (!container) return;
+        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">جاري تحميل الطلبات...</div>';
+        
+        try {
+            const res = await fetch(`${API_BASE}/booking?status=${status}`);
+            const bookings = await res.json();
+            
+            if (bookings.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">لا توجد طلبات في قسم ${status === 'pending' ? 'المعلقة' : (status === 'approved' ? 'المقبولة' : 'المرفوضة')}</div>`;
+                return;
+            }
+            
+            container.innerHTML = bookings.map(b => `
+                <div style="background:var(--item-bg); padding:15px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:10px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <h4 style="margin:0 0 5px 0; color:var(--text-main); font-size:1.1rem;">${b.name}</h4>
+                            <p style="margin:0; color:var(--text-muted); font-size:0.9rem;">📱 ${b.phone}</p>
+                            <p style="margin:5px 0 0 0; color:var(--primary-color); font-weight:bold;">📅 ${b.desired_date} | ⏰ ${b.desired_time}</p>
+                            ${b.reason ? `<p style="margin:5px 0 0 0; color:var(--text-muted); font-size:0.85rem; background:var(--input-bg); padding:5px; border-radius:4px;">💬 ${b.reason}</p>` : ''}
+                        </div>
+                        <span style="font-size:0.8rem; color:#9ca3af;">تاريخ الطلب: ${new Date(b.created_at).toLocaleDateString('ar-EG')}</span>
+                    </div>
+                    ${status === 'pending' ? `
+                    <div style="display:flex; gap:10px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+                        <button onclick="receptionApp.updateBookingStatus(${b.id}, 'approved')" style="flex:1; background:#10b981; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">✅ قبول</button>
+                        <button onclick="receptionApp.showChangeTimeModal(${b.id}, '${b.desired_date}', '${b.desired_time}')" style="flex:1; background:#f59e0b; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">🔄 تغيير الميعاد</button>
+                        <button onclick="receptionApp.updateBookingStatus(${b.id}, 'rejected')" style="flex:1; background:#ef4444; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">❌ رفض</button>
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            
+            this.pollOnlineBookings();
+        } catch(e) {
+            container.innerHTML = '<div style="color:red; text-align:center;">حدث خطأ في جلب الطلبات</div>';
+        }
+    },
+
+    showChangeTimeModal(id, date, time) {
+        let modal = document.getElementById('change-time-modal');
+        if (modal) modal.remove();
+        
+        modal = document.createElement('div');
+        modal.id = 'change-time-modal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+            <div style="background:var(--modal-bg); color:var(--text-main); border-radius:12px; padding:20px; width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+                <h3 style="margin-top:0;">🔄 تعديل الميعاد وقبول الطلب</h3>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>تاريخ الحجز الجديد</label>
+                    <input type="date" id="new_booking_date" value="${date}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>الوقت الجديد</label>
+                    <input type="time" id="new_booking_time" value="${time}" step="1800" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="receptionApp.submitTimeChange(${id})" style="flex:1; background:#10b981; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer;">تأكيد وقبول</button>
+                    <button onclick="document.getElementById('change-time-modal').remove()" style="flex:1; background:#9ca3af; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer;">إلغاء</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    },
+
+    async submitTimeChange(id) {
+        const date = document.getElementById('new_booking_date').value;
+        const time = document.getElementById('new_booking_time').value;
+        await this.updateBookingStatus(id, 'approved', date, time);
+        document.getElementById('change-time-modal').remove();
+    },
+
+    async updateBookingStatus(id, status, newDate=null, newTime=null) {
+        const payload = { status: status };
+        if (newDate) payload.desired_date = newDate;
+        if (newTime) payload.desired_time = newTime;
+        
+        try {
+            const res = await fetch(`${API_BASE}/booking/${id}/status`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                showToast(`تم تحديث الحجز بنجاح: ${status === 'approved' ? 'مقبول' : 'مرفوض'}`);
+                this.loadOnlineBookings('pending');
+            } else {
+                showToast('حدث خطأ', 'error');
+            }
+        } catch(e) {
+            showToast('خطأ في الاتصال بالخادم', 'error');
+        }
+    },
+
+    switchTab(e, panelId) {
         e.preventDefault();
         document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
         e.target.parentElement.classList.add('active');

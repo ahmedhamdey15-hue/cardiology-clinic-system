@@ -104,5 +104,12 @@ def update_booking_status(booking_id):
         return jsonify({'error': 'الطلب غير موجود'}), 404
         
     booking.status = data.get('status', booking.status)
+    if 'desired_date' in data:
+        try:
+            booking.desired_date = datetime.strptime(data['desired_date'], '%Y-%m-%d').date()
+        except: pass
+    if 'desired_time' in data:
+        booking.desired_time = data['desired_time']
+        
     db.session.commit()
-    return jsonify({'message': 'تم تحديث حالة الطلب'})
+    return jsonify({'message': 'تم تحديث الحجز بنجاح'})
