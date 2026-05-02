@@ -116,8 +116,8 @@ def update_booking_status(booking_id):
         
     from backend.models import Patient, Visit, Measurement
     
-    # Auto-create Patient and Visit when approved
-    if new_status == 'approved' and old_status != 'approved':
+    # Auto-create or update Patient and Visit when approved
+    if new_status == 'approved':
         # Check if patient exists by phone
         patient = Patient.query.filter_by(phone=booking.phone).first()
         if not patient:
@@ -142,14 +142,8 @@ def update_booking_status(booking_id):
             
             new_measurement = Measurement(visit_id=new_visit.id)
             db.session.add(new_measurement)
-            
-    # Update existing visit if time/date was changed for an already approved booking
-    elif new_status == 'approved' and old_status == 'approved':
-        patient = Patient.query.filter_by(phone=booking.phone).first()
-        if patient:
-            visit = Visit.query.filter_by(patient_file_number=patient.file_number, appointment_date=booking.desired_date).first()
-            if visit:
-                visit.appointment_time = booking.desired_time
+        else:
+            visit.appointment_time = booking.desired_time
 
     db.session.commit()
     return jsonify({'message': 'تم تحديث الحجز بنجاح'})
