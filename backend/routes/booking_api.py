@@ -103,7 +103,10 @@ def update_booking_status(booking_id):
     if not booking:
         return jsonify({'error': 'الطلب غير موجود'}), 404
         
-    booking.status = data.get('status', booking.status)
+    old_status = booking.status
+    new_status = data.get('status', booking.status)
+    booking.status = new_status
+    
     if 'desired_date' in data:
         try:
             booking.desired_date = datetime.strptime(data['desired_date'], '%Y-%m-%d').date()
@@ -111,5 +114,42 @@ def update_booking_status(booking_id):
     if 'desired_time' in data:
         booking.desired_time = data['desired_time']
         
+    from backend.models import Patient, Visit, Measurement
+    
+    # Auto-create Patient and Visit when approved
+    if new_status == 'approved' and old_status != 'approved':
+        # Check if patient exists by phone
+        patient = Patient.query.filter_by(phone=booking.phone).first()
+        if not patient:
+            # Create a stub patient
+            patient = Patient(name=booking.name, phone=booking.phone)
+            db.session.add(patient)
+            db.session.flush() # To get patient.file_number
+            
+        # Check if visit already exists for this date/patient
+        visit = Visit.query.filter_by(patient_file_number=patient.file_number, appointment_date=booking.desired_date).first()
+        if not visit:
+            new_visit = Visit(
+                patient_file_number=patient.file_number,
+                visit_type='كشف جديد',
+                cost=0,
+                appointment_date=booking.desired_date,
+                appointment_time=booking.desired_time,
+                status='waiting'
+            )
+            db.session.add(new_visit)
+            db.session.flush()
+            
+            new_measurement = Measurement(visit_id=new_visit.id)
+            db.session.add(new_measurement)
+            
+    # Update existing visit if time/date was changed for an already approved booking
+    elif new_status == 'approved' and old_status == 'approved':
+        patient = Patient.query.filter_by(phone=booking.phone).first()
+        if patient:
+            visit = Visit.query.filter_by(patient_file_number=patient.file_number, appointment_date=booking.desired_date).first()
+            if visit:
+                visit.appointment_time = booking.desired_time
+
     db.session.commit()
     return jsonify({'message': 'تم تحديث الحجز بنجاح'})
