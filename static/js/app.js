@@ -1316,6 +1316,65 @@ const adminApp = {
     doctorApp.selectPatient = async function (...args) {
         await origSelect(...args);
         doctorApp.clearPrescription();
+        const fileNum = document.getElementById('d_file_number')?.textContent;
+        if (fileNum) doctorApp.loadAttachments(fileNum);
+    };
+
+    doctorApp.loadAttachments = async function(fileNum) {
+        const list = document.getElementById('d_attachments_list');
+        if (!list) return;
+        list.innerHTML = '<li style="color:#6b7280; font-size:0.9rem;">جاري التحميل...</li>';
+        try {
+            const res = await fetch(`${API_BASE}/patients/${fileNum}/attachments`);
+            const data = await res.json();
+            if (data.length === 0) {
+                list.innerHTML = '<li style="color:#6b7280; font-size:0.9rem;">لا توجد مرفقات سابقة</li>';
+                return;
+            }
+            list.innerHTML = data.map(a => `
+                <li style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #d1fae5;">
+                    <a href="${a.url}" target="_blank" style="color:#059669; text-decoration:none; font-weight:bold;">📄 ${a.file_name}</a>
+                    <span style="font-size:0.8rem; color:#6b7280;">${new Date(a.upload_date).toLocaleDateString()}</span>
+                </li>
+            `).join('');
+        } catch(e) {
+            list.innerHTML = '<li style="color:var(--danger); font-size:0.9rem;">فشل تحميل المرفقات</li>';
+        }
+    };
+
+    doctorApp.uploadAttachment = async function() {
+        const fileNum = document.getElementById('d_file_number')?.textContent;
+        const fileInput = document.getElementById('d_attachment_file');
+        if (!fileNum) return showToast('اختر المريض أولاً', 'error');
+        if (!fileInput || !fileInput.files[0]) return showToast('الرجاء اختيار ملف', 'error');
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const btn = fileInput.nextElementSibling;
+            const originalText = btn.textContent;
+            btn.textContent = 'جاري الرفع...';
+            btn.disabled = true;
+
+            const res = await fetch(`${API_BASE}/patients/${fileNum}/attachments`, {
+                method: 'POST',
+                body: formData // DO NOT SET Content-Type, fetch sets it automatically with boundaries
+            });
+
+            if (res.ok) {
+                showToast('تم رفع المرفق بنجاح');
+                fileInput.value = '';
+                this.loadAttachments(fileNum);
+            } else {
+                showToast('فشل رفع الملف', 'error');
+            }
+            
+            btn.textContent = originalText;
+            btn.disabled = false;
+        } catch(e) {
+            showToast('حدث خطأ أثناء الرفع', 'error');
+        }
     };
 })();
 

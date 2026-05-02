@@ -156,8 +156,20 @@
 
                         <h4 style="border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; color: var(--primary-color);">
                             تاريخ الزيارات السابقة</h4>
-                        <div id="d_history_container" style="max-height: 500px; overflow-y:auto; padding-right:5px;">
+                        <div id="d_history_container" style="max-height: 300px; overflow-y:auto; padding-right:5px; margin-bottom: 20px;">
                             <!-- History populated via JS -->
+                        </div>
+
+                        <h4 style="border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; color: #059669;">
+                            📎 مرفقات المريض (تحاليل وأشعة)</h4>
+                        <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; border: 1px solid #d1fae5;">
+                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                <input type="file" id="d_attachment_file" style="flex:1; background:#fff; border:1px solid #a7f3d0; border-radius:6px; padding:6px;">
+                                <button type="button" onclick="doctorApp.uploadAttachment()" style="background:#059669; color:#fff; border:none; border-radius:6px; padding:6px 15px; cursor:pointer; font-family:inherit; font-weight:bold;">رفع المرفق</button>
+                            </div>
+                            <ul id="d_attachments_list" style="list-style:none; padding:0; margin:0; max-height:200px; overflow-y:auto;">
+                                <li style="color:#6b7280; font-size:0.9rem;">جاري التحميل...</li>
+                            </ul>
                         </div>
                     </div>
 
