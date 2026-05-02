@@ -182,7 +182,7 @@ const receptionApp = {
         }
     },
 
-    switchTab(e, panelId) {
+    switchTab(e, tabId) {
         e.preventDefault();
         document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
         e.target.parentElement.classList.add('active');
