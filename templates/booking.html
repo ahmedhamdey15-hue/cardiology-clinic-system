@@ -33,8 +33,11 @@
             <input type="date" id="desired_date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">الوقت المفضل (اختياري)</label>
-            <input type="time" id="desired_time" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+            <label class="block text-sm font-medium text-gray-700">الوقت المتاح المفضل</label>
+            <select id="desired_time" required disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-gray-50">
+                <option value="">اختر التاريخ أولاً...</option>
+            </select>
+            <p id="slots_hint" class="text-xs text-gray-500 mt-1 hidden">يتم عرض المواعيد غير المحجوزة فقط.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700">سبب الزيارة (اختياري)</label>
@@ -50,6 +53,55 @@
 </div>
 
 <script>
+    const dateInput = document.getElementById('desired_date');
+    const timeSelect = document.getElementById('desired_time');
+    const slotsHint = document.getElementById('slots_hint');
+
+    // Prevent selecting past dates
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+
+    dateInput.addEventListener('change', async (e) => {
+        const dateVal = e.target.value;
+        if(!dateVal) {
+            timeSelect.innerHTML = '<option value="">اختر التاريخ أولاً...</option>';
+            timeSelect.disabled = true;
+            slotsHint.classList.add('hidden');
+            return;
+        }
+
+        timeSelect.innerHTML = '<option value="">جاري البحث عن مواعيد...</option>';
+        timeSelect.disabled = true;
+
+        try {
+            const res = await fetch(`/api/booking/available_slots?date=${dateVal}`);
+            const slots = await res.json();
+            
+            if(slots.error) throw new Error(slots.error);
+            
+            if(slots.length === 0) {
+                timeSelect.innerHTML = '<option value="">عفواً، لا توجد مواعيد متاحة في هذا اليوم</option>';
+            } else {
+                timeSelect.innerHTML = '<option value="">-- اختر الوقت المناسب --</option>';
+                slots.forEach(slot => {
+                    // Convert 24h format to 12h AM/PM for display
+                    let [hour, min] = slot.split(':');
+                    let h = parseInt(hour);
+                    let ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+                    h = h % 12 || 12;
+                    let displaySlot = `${h}:${min} ${ampm}`;
+                    
+                    timeSelect.innerHTML += `<option value="${slot}">${displaySlot}</option>`;
+                });
+                timeSelect.disabled = false;
+                timeSelect.classList.remove('bg-gray-50');
+                slotsHint.classList.remove('hidden');
+            }
+        } catch(err) {
+            timeSelect.innerHTML = '<option value="">حدث خطأ، حاول تغيير التاريخ</option>';
+        }
+    });
+
 document.getElementById('bookingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
