@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 </head>
 
-<body>
+<body class="has-global-topbar">
     <button id="lang-toggle-btn" onclick="toggleLanguage()" style="position:fixed; bottom:20px; right:20px; z-index:9999; background:#1e40af; color:#fff; border:none; padding:10px 20px; border-radius:30px; cursor:pointer; font-family:Tajawal, sans-serif; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:0.3s;">English 🌐</button>
 <div id="google_translate_element" style="display:none;"></div>
     <div class="toast-container" id="toastContainer"></div>
@@ -18,14 +18,10 @@
         <aside class="sidebar">
             <h2><i class="icon">🏨</i> شاشة الاستقبال</h2>
             <ul class="nav-links">
-                <li class="active" id="li-new-visit"><a href="#" id="nav-new-visit">تسجيل حجز جديد</a></li>
-                <li><a href="#" onclick="document.getElementById('add-patient-modal').style.display='flex'">+ إضافة مريض
-                        جديد</a></li>
-                <li><a href="#" onclick="themeApp.openSettings(); return false;" style="color:var(--primary-color);">🎨
-                        ألوان النظام</a></li>
+                <li id="li-new-visit"><a href="#" id="nav-new-visit">تسجيل حجز جديد</a></li>
                 <li><a href="#" id="dark-mode-toggle-btn" onclick="themeApp.toggleDarkMode(); return false;">🌙 الوضع
                         الليلي</a></li>
-                <li id="li-queue"><a href="#" id="nav-queue">قائمة انتظار اليوم</a></li>
+                <li class="active" id="li-queue"><a href="#" id="nav-queue">قائمة انتظار اليوم</a></li>
                 <li id="li-online-bookings"><a href="#" id="nav-online-bookings">🌐 حجوزات الأونلاين <span id="online-bookings-badge" style="background:#ef4444; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.75rem; margin-right:5px; display:none;">0</span></a></li>
                 <li id="li-weekly"><a href="#" id="nav-weekly">الجدول الأسبوعي</a></li>
                 <li id="li-daily-report"><a href="#" id="nav-daily-report">تقرير اليوم</a></li>
@@ -36,7 +32,7 @@
 
         <main class="content-area">
             <!-- New Visit Panel -->
-            <div class="panel" id="panel-new-visit">
+            <div class="panel hidden" id="panel-new-visit">
                 <h3>تسجيل حجز جديد لمريض مسجل أو جديد</h3>
                 <form id="form-new-visit">
                     <div class="form-group"
@@ -130,7 +126,7 @@
 
 
             <!-- Queue Panel -->
-            <div class="panel hidden" id="panel-queue">
+            <div class="panel" id="panel-queue">
                 <div class="header-action">
                     <h3>قائمة الانتظار وترتيب الدور اليوم</h3>
                     <button class="btn btn-secondary" onclick="receptionApp.loadQueue()">تحديث القائمة</button>

@@ -24,6 +24,27 @@ def create_booking():
     if not phone or not phone.startswith('0') or len(phone) != 11 or not phone.isdigit():
         return jsonify({'error': 'رقم الهاتف يجب أن يتكون من 11 رقم ويبدأ بصفر (0)'}), 400
 
+    from backend.models import Settings
+    start_time_setting = Settings.query.filter_by(key='clinic_start_time').first()
+    end_time_setting = Settings.query.filter_by(key='clinic_end_time').first()
+    off_days_setting = Settings.query.filter_by(key='clinic_off_days').first()
+    
+    start_hour = int(start_time_setting.value.split(':')[0]) if start_time_setting and start_time_setting.value else 10
+    end_hour = int(end_time_setting.value.split(':')[0]) if end_time_setting and end_time_setting.value else 22
+    off_days = [int(d) for d in off_days_setting.value.split(',') if d] if off_days_setting and off_days_setting.value else []
+    
+    if desired_date.weekday() in off_days:
+        return jsonify({'error': 'عفواً، هذا اليوم عطلة رسمية للعيادة.'}), 400
+        
+    desired_time = data.get('desired_time', '')
+    if desired_time:
+        try:
+            h = int(desired_time.split(':')[0])
+            if h < start_hour or h >= end_hour:
+                return jsonify({'error': 'عفواً، هذا الوقت خارج مواعيد عمل العيادة.'}), 400
+        except:
+            pass
+
     new_booking = OnlineBooking(
         name=data.get('name'),
         phone=data.get('phone'),
@@ -67,12 +88,24 @@ def get_available_slots():
     except ValueError:
         return jsonify({'error': 'Invalid date format'}), 400
 
-    from backend.models import Visit
+    from backend.models import Visit, Settings
     
-    # Working hours: 10:00 to 22:00, every 30 minutes
-    # Generate all possible slots
+    # Load settings
+    start_time_setting = Settings.query.filter_by(key='clinic_start_time').first()
+    end_time_setting = Settings.query.filter_by(key='clinic_end_time').first()
+    off_days_setting = Settings.query.filter_by(key='clinic_off_days').first()
+    
+    start_hour = int(start_time_setting.value.split(':')[0]) if start_time_setting and start_time_setting.value else 10
+    end_hour = int(end_time_setting.value.split(':')[0]) if end_time_setting and end_time_setting.value else 22
+    off_days = [int(d) for d in off_days_setting.value.split(',') if d] if off_days_setting and off_days_setting.value else []
+    
+    # Check if target_date is an off day
+    if target_date.weekday() in off_days:
+        return jsonify([])
+    
+    # Generate all possible slots based on working hours
     all_slots = []
-    for hour in range(10, 22):
+    for hour in range(start_hour, end_hour):
         all_slots.append(f"{hour:02d}:00")
         all_slots.append(f"{hour:02d}:30")
         
@@ -135,7 +168,7 @@ def update_booking_status(booking_id):
                 cost=0,
                 appointment_date=booking.desired_date,
                 appointment_time=booking.desired_time,
-                status='waiting'
+                status='unconfirmed'
             )
             db.session.add(new_visit)
             db.session.flush()

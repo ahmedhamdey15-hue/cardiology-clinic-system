@@ -8,6 +8,7 @@ services:
       - "5001:5000"
     environment:
       - DATABASE_URL=postgresql://clinic_user:clinic_password@db:5432/clinic_db
+      - TZ=Africa/Cairo
     volumes:
       - ./uploads:/app/uploads
     depends_on:
@@ -21,6 +22,7 @@ services:
       - POSTGRES_USER=clinic_user
       - POSTGRES_PASSWORD=clinic_password
       - POSTGRES_DB=clinic_db
+      - TZ=Africa/Cairo
     ports:
       - "5400:5432"
     volumes:

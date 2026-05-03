@@ -65,6 +65,11 @@ const receptionApp = {
         // Set default date
         const dateInput = document.getElementById('visit_date');
         if (dateInput) dateInput.valueAsDate = new Date();
+        
+        // Load default tab data (queue)
+        if (document.getElementById('panel-queue')) {
+            this.loadQueue();
+        }
     },
 
     async pollOnlineBookings() {
@@ -369,6 +374,7 @@ const receptionApp = {
                 let statusText = '';
                 let statusClass = '';
                 switch (q.status) {
+                    case 'unconfirmed': statusText = 'غير مؤكد'; statusClass = 'status-unconfirmed'; break;
                     case 'waiting': statusText = 'في الانتظار'; statusClass = 'status-waiting'; break;
                     case 'with_assistant': statusText = 'مع المساعد ⌛'; statusClass = 'status-with-assistant'; break;
                     case 'with_doctor': statusText = 'كشف، الآن'; statusClass = 'status-with-doctor'; break;
@@ -376,17 +382,25 @@ const receptionApp = {
                 }
 
                 const billBtn = (q.has_unbilled_services) ? `
-                    <button onclick="receptionApp.billExtraServices(${q.visit_id}, '${q.patient_name}')"
+                    <button onclick="receptionApp.billExtraServices(${q.visit_id}, '${q.patient_name.replace(/'/g, "\\'")}')"
                         style="margin-top:6px; background:#ef4444; color:#fff; border:none; border-radius:6px;
                         padding:6px 12px; cursor:pointer; font-size:0.85rem; font-weight:bold; font-family:inherit; box-shadow: 0 0 8px rgba(239,68,68,0.6);">
                         🚨 خدمات إضافية غير محصّلة
+                    </button>` : '';
+
+                const confirmBtn = (q.status === 'unconfirmed') ? `
+                    <button onclick="receptionApp.showConfirmAttendanceModal(${q.visit_id}, '${q.patient_name.replace(/'/g, "\\'")}')"
+                        style="margin-top:6px; background:#3b82f6; color:#fff; border:none; border-radius:6px;
+                        padding:6px 12px; cursor:pointer; font-size:0.85rem; font-weight:bold; font-family:inherit; box-shadow: 0 0 8px rgba(59,130,246,0.6);">
+                        ✅ تأكيد الحضور
                     </button>` : '';
 
                 container.innerHTML += `
                     <li class="queue-item">
                         <div class="queue-info left">
                             <h4>${q.patient_name} <span class="file-pill">ملف: ${q.file_number}</span></h4>
-                            <p>نوع: ${q.visit_type} | موعد تقريبي: ${q.appointment_time || 'غير محدد'}</p>
+                            <p>نوع: ${q.visit_type || 'غير محدد'} | موعد تقريبي: ${q.appointment_time || 'غير محدد'}</p>
+                            ${confirmBtn}
                             ${billBtn}
                         </div>
                         <div>
@@ -397,6 +411,69 @@ const receptionApp = {
             });
         } catch (error) {
             showToast('لم نتمكن من جلب الدور', 'error');
+        }
+    },
+
+    showConfirmAttendanceModal(visitId, patientName) {
+        let existingModal = document.getElementById('confirm-attendance-modal');
+        if (existingModal) existingModal.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'confirm-attendance-modal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+            <div style="background:var(--modal-bg);border-radius:16px;padding:30px;width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0;color:var(--primary-color);">✅ تأكيد حضور - ${patientName}</h3>
+                
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>نوع الكشف</label>
+                    <select id="confirm_visit_type" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                        <option value="كشف جديد">كشف جديد</option>
+                        <option value="إعادة">إعادة</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>مبلغ الكشف</label>
+                    <input type="number" id="confirm_visit_cost" value="0" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+                </div>
+                
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button onclick="receptionApp.submitConfirmAttendance(${visitId})"
+                        style="flex:1;background:#10b981;color:#fff;border:none;border-radius:8px;padding:11px;cursor:pointer;font-size:1rem;font-weight:700;">
+                        تأكيد ✅</button>
+                    <button onclick="document.getElementById('confirm-attendance-modal').remove()"
+                        style="flex:1;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-color);border-radius:8px;padding:11px;cursor:pointer;font-size:1rem;">
+                        إلغاء</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    },
+
+    async submitConfirmAttendance(visitId) {
+        const type = document.getElementById('confirm_visit_type').value;
+        const cost = document.getElementById('confirm_visit_cost').value;
+        
+        try {
+            const res = await fetch(`${API_BASE}/visits/${visitId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'waiting',
+                    visit_type: type,
+                    cost: cost
+                })
+            });
+            
+            if (res.ok) {
+                showToast('✅ تم تأكيد الحضور بنجاح');
+                document.getElementById('confirm-attendance-modal').remove();
+                this.loadQueue();
+            } else {
+                showToast('حدث خطأ', 'error');
+            }
+        } catch (e) {
+            showToast('خطأ في الاتصال', 'error');
         }
     },
 
@@ -585,7 +662,7 @@ const receptionApp = {
                 return;
             }
 
-            const statusMap = { waiting: 'في الانتظار', with_assistant: 'مع المساعد', with_doctor: 'مع الطبيب', completed: 'تم الكشف ✓' };
+            const statusMap = { unconfirmed: 'غير مؤكد', waiting: 'في الانتظار', with_assistant: 'مع المساعد', with_doctor: 'مع الطبيب', completed: 'تم الكشف ✓' };
             let rows = '';
             visits.forEach((v, i) => {
                 rows += `
@@ -1508,7 +1585,6 @@ const adminApp = {
 const themeApp = {
     init() {
         this.loadLocalThemeMode();
-        this.applyCurrentUserTheme();
     },
 
     loadLocalThemeMode() {
@@ -1523,9 +1599,6 @@ const themeApp = {
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme_mode', next);
         this.updateToggleButton(next);
-
-        // Reset custom backgrounds to not fight with dark mode variables setup
-        this.applyCurrentUserTheme();
     },
 
     updateToggleButton(mode) {
@@ -1533,116 +1606,87 @@ const themeApp = {
         if (btn) {
             btn.innerHTML = mode === 'dark' ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي';
         }
-    },
-
-    async applyCurrentUserTheme() {
-        try {
-            const res = await fetch('/api/current_user');
-            if (res.ok) {
-                const user = await res.json();
-                const currentMode = document.documentElement.getAttribute('data-theme');
-
-                if (user.theme_color) {
-                    document.documentElement.style.setProperty('--primary-color', user.theme_color);
-                    const isPrimaryDark = this.isColorDark(user.theme_color);
-                    document.documentElement.style.setProperty('--primary-text', isPrimaryDark ? '#ffffff' : '#1f2937');
-                }
-
-                // Only override backgrounds if NOT in dark mode to prevent conflicts
-                if (user.theme_bg && currentMode !== 'dark') {
-                    document.documentElement.style.setProperty('--background-color', user.theme_bg);
-                    const isBgDark = this.isColorDark(user.theme_bg);
-                    if (isBgDark) {
-                        document.documentElement.style.setProperty('--text-main', '#f8fafc');
-                        document.documentElement.style.setProperty('--card-bg', 'rgba(30, 41, 59, 0.9)');
-                    } else {
-                        document.documentElement.style.setProperty('--text-main', '#1f2937');
-                        document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
-                    }
-                } else if (currentMode === 'dark') {
-                    // Reset variables so CSS takes over
-                    document.documentElement.style.removeProperty('--background-color');
-                    document.documentElement.style.removeProperty('--text-main');
-                    document.documentElement.style.removeProperty('--card-bg');
-                } else {
-                    // In light mode with no user preference, reset to default
-                    document.documentElement.style.removeProperty('--background-color');
-                    document.documentElement.style.removeProperty('--text-main');
-                    document.documentElement.style.removeProperty('--card-bg');
-                }
-            }
-        } catch (e) { }
-    },
-
-    isColorDark(hex) {
-        if (!hex) return false;
-        let c = hex.substring(1);
-        let rgb = parseInt(c, 16);
-        let r = (rgb >> 16) & 0xff;
-        let g = (rgb >> 8) & 0xff;
-        let b = (rgb >> 0) & 0xff;
-        let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        return luma < 128;
-    },
-
-    openSettings() {
-        let modal = document.getElementById('theme-settings-modal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'theme-settings-modal';
-            modal.className = 'modal-overlay';
-            modal.style.display = 'flex';
-
-            const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#2563eb';
-            const currentBg = getComputedStyle(document.documentElement).getPropertyValue('--background-color').trim() || '#f3f4f6';
-
-            modal.innerHTML = `
-                <div class="modal-box" style="width: 350px; background:var(--modal-bg); color:var(--text-main);">
-                    <h3 style="margin-top:0; color:var(--primary-color);">🎨 تخصيص ألوان النظام</h3>
-                    <div class="form-group">
-                        <label>اللون الأساسي (Primary Color)</label>
-                        <input type="color" id="theme_primary_picker" value="${currentPrimary}" style="height:50px; padding:5px; border-radius:8px;">
-                    </div>
-                    <div class="form-group">
-                        <label>لون الخلفية الفاتحة</label>
-                        <input type="color" id="theme_bg_picker" value="${currentBg}" style="height:50px; padding:5px; border-radius:8px;">
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:24px;">
-                        <button class="btn" onclick="themeApp.saveTheme()" style="flex:1;">حفظ</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('theme-settings-modal').remove()" style="flex:1;">إلغاء</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        } else {
-            modal.style.display = 'flex';
-        }
-    },
-
-    async saveTheme() {
-        const primary = document.getElementById('theme_primary_picker').value;
-        const bg = document.getElementById('theme_bg_picker').value;
-
-        try {
-            const res = await fetch('/api/user/theme', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ theme_color: primary, theme_bg: bg })
-            });
-            if (res.ok) {
-                showToast('✅ تم حفظ الألوان الخاصة بك');
-                document.getElementById('theme-settings-modal').remove();
-                this.applyCurrentUserTheme();
-            } else {
-                showToast('خطأ في حفظ الألوان', 'error');
-            }
-        } catch (e) {
-            showToast('خطأ في الاتصال', 'error');
-        }
     }
 };
 
 // Auto-run theme initialization
 document.addEventListener('DOMContentLoaded', () => {
     themeApp.init();
+});
+
+// ============================================================
+// Global UI Utilities (Top Bar, Clock, etc.)
+// ============================================================
+const globalUI = {
+    init() {
+        if (document.body.classList.contains('has-global-topbar')) {
+            this.injectTopBar();
+            this.startClock();
+            this.fetchUserInfo();
+        }
+    },
+    injectTopBar() {
+        const titleText = document.title.split('-')[0].trim();
+        const topBarHTML = `
+            <div class="global-top-bar">
+                <div class="global-top-bar-right">
+                    <h2 style="margin:0; font-size:1.3rem; color:var(--primary-color);">🏥 ${titleText}</h2>
+                </div>
+                <div class="global-top-bar-left">
+                    <div class="global-time-widget">
+                        <span class="date" id="global-date">--/--/----</span>
+                        <span class="time" id="global-time">--:--:--</span>
+                    </div>
+                    <div class="global-user-widget">
+                        <div class="avatar" id="global-avatar">?</div>
+                        <div style="display:flex; flex-direction:column; line-height:1.2;">
+                            <span id="global-username">جاري التحميل...</span>
+                            <span id="global-role" style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('afterbegin', topBarHTML);
+    },
+    startClock() {
+        const timeEl = document.getElementById('global-time');
+        const dateEl = document.getElementById('global-date');
+        
+        const update = () => {
+            const now = new Date();
+            const timeOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            timeEl.textContent = now.toLocaleTimeString('ar-EG', timeOpts);
+            dateEl.textContent = now.toLocaleDateString('ar-EG', dateOpts);
+        };
+        update();
+        setInterval(update, 1000);
+    },
+    async fetchUserInfo() {
+        try {
+            const res = await fetch('/api/current_user');
+            if (res.ok) {
+                const user = await res.json();
+                const name = user.name || user.username || 'مستخدم';
+                document.getElementById('global-username').textContent = name;
+                document.getElementById('global-avatar').textContent = name.charAt(0).toUpperCase();
+                
+                let roleText = 'مستخدم';
+                if (user.role === 'admin') {
+                    roleText = 'مسؤول النظام';
+                    const adminLink = document.getElementById('doctor-admin-link');
+                    if (adminLink) adminLink.style.display = 'block';
+                }
+                else if (user.role === 'doctor') roleText = 'طبيب';
+                else if (user.role === 'assistant') roleText = 'مساعد';
+                else if (user.role === 'receptionist') roleText = 'استقبال';
+                document.getElementById('global-role').textContent = roleText;
+            }
+        } catch (e) { }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    globalUI.init();
 });
