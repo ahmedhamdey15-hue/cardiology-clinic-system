@@ -42,6 +42,17 @@ def create_app(config_name='default'):
     app.register_blueprint(booking_api_bp)
     app.register_blueprint(analytics_api_bp)
 
+    # Inject settings globally to all templates
+    @app.context_processor
+    def inject_settings():
+        from backend.models import Settings
+        try:
+            settings_rows = Settings.query.all()
+            settings_dict = {s.key: s.value for s in settings_rows}
+        except:
+            settings_dict = {}
+        return dict(settings=settings_dict)
+
     # Database initialization and seeding
     with app.app_context():
         retries = 5

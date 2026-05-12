@@ -13,7 +13,7 @@ def get_medicines():
     query = Medicine.query
     if q:
         query = query.filter(Medicine.name.ilike(f'%{q}%'))
-    medicines = query.order_by(Medicine.name).all()
+    medicines = query.order_by(Medicine.name).limit(50).all()
     return jsonify([{
         'id': m.id, 'name': m.name,
         'dosage_form': m.dosage_form,

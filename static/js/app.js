@@ -15,6 +15,19 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// Global Clock Logic
+function updateGlobalClock() {
+    const timeEl = document.getElementById('current-time');
+    const dateEl = document.getElementById('current-date');
+    if (!timeEl || !dateEl) return;
+    
+    const now = new Date();
+    timeEl.textContent = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    dateEl.textContent = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+setInterval(updateGlobalClock, 1000);
+updateGlobalClock();
+
 // ----------------------------------------------------
 // Reception App Logic
 // ----------------------------------------------------

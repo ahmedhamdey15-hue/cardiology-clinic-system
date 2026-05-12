@@ -4,29 +4,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شاشة الاستقبال - عيادة القلب</title>
+    <title>شاشة الاستقبال - {{ settings.get('clinic_name', 'عيادة القلب') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body class="has-global-topbar">
-    <button id="lang-toggle-btn" onclick="toggleLanguage()" style="position:fixed; bottom:20px; right:20px; z-index:9999; background:#1e40af; color:#fff; border:none; padding:10px 20px; border-radius:30px; cursor:pointer; font-family:Tajawal, sans-serif; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:0.3s;">English 🌐</button>
-<div id="google_translate_element" style="display:none;"></div>
+    <div class="global-top-bar">
+        <div class="global-top-bar-right">
+            <h2 style="margin: 0; color: var(--primary-color); display: flex; align-items: center; gap: 10px;">
+                <div class="logo-circle" style="width: 40px; height: 40px; margin: 0; box-shadow: none; border: none; background: transparent;">
+                    <i class="fa-solid fa-stethoscope logo-icon" style="font-size: 1.8rem; color: var(--primary-color);"></i>
+                </div>
+                <div>
+                    {{ settings.get('clinic_name', 'عيادة القلب') }}
+                    {% if settings.get('doctor_name') %}
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-top: 2px;">{{ settings.get('doctor_name') }}</div>
+                    {% endif %}
+                </div>
+            </h2>
+        </div>
+        <div class="global-top-bar-left">
+            <div class="global-time-widget">
+                <span class="date" id="current-date"></span>
+                <span class="time" id="current-time"></span>
+            </div>
+            <button id="lang-toggle-btn" onclick="toggleLanguage()" class="btn btn-secondary" style="padding: 6px 15px; font-size: 0.85rem; border-radius: 20px; box-shadow: none;">English <i class="fa-solid fa-globe"></i></button>
+            <div id="google_translate_element" style="display:none;"></div>
+            <div class="global-user-widget">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
+                    <span style="font-size: 0.9rem;">الاستقبال</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">موظف استقبال</span>
+                </div>
+                <div class="avatar"><i class="fa-solid fa-desktop"></i></div>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
     <div class="app-layout">
         <aside class="sidebar">
-            <h2><i class="icon">🏨</i> شاشة الاستقبال</h2>
+            <h2><i class="fa-solid fa-hospital-user"></i> شاشة الاستقبال</h2>
             <ul class="nav-links">
-                <li id="li-new-visit"><a href="#" id="nav-new-visit">تسجيل حجز جديد</a></li>
-                <li><a href="#" id="dark-mode-toggle-btn" onclick="themeApp.toggleDarkMode(); return false;">🌙 الوضع
-                        الليلي</a></li>
-                <li class="active" id="li-queue"><a href="#" id="nav-queue">قائمة انتظار اليوم</a></li>
-                <li id="li-online-bookings"><a href="#" id="nav-online-bookings">🌐 حجوزات الأونلاين <span id="online-bookings-badge" style="background:#ef4444; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.75rem; margin-right:5px; display:none;">0</span></a></li>
-                <li id="li-weekly"><a href="#" id="nav-weekly">الجدول الأسبوعي</a></li>
-                <li id="li-daily-report"><a href="#" id="nav-daily-report">تقرير اليوم</a></li>
-                <li><a href="/logout" style="color:var(--danger)">تسجيل الخروج</a></li>
-                <li><a href="/">العودة للرئيسية</a></li>
+                <li id="li-new-visit"><a href="#" id="nav-new-visit"><i class="fa-solid fa-user-plus"></i> <span class="nav-text">تسجيل حجز جديد</span></a></li>
+                <li class="active" id="li-queue"><a href="#" id="nav-queue"><i class="fa-solid fa-list-ol"></i> <span class="nav-text">قائمة انتظار اليوم</span></a></li>
+                <li id="li-online-bookings"><a href="#" id="nav-online-bookings"><i class="fa-solid fa-globe"></i> <span class="nav-text">حجوزات الأونلاين</span> <span id="online-bookings-badge" style="background:#ef4444; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.75rem; margin-right:5px; display:none;">0</span></a></li>
+                <li id="li-weekly"><a href="#" id="nav-weekly"><i class="fa-solid fa-calendar-days"></i> <span class="nav-text">الجدول الأسبوعي</span></a></li>
+                <li id="li-daily-report"><a href="#" id="nav-daily-report"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">تقرير اليوم</span></a></li>
+                <li><a href="#" id="dark-mode-toggle-btn" onclick="themeApp.toggleDarkMode(); return false;"><i class="fa-solid fa-moon"></i> <span class="nav-text">الوضع الليلي</span></a></li>
+                <li><a href="/" style="color:var(--text-muted)"><i class="fa-solid fa-house"></i> <span class="nav-text">العودة للرئيسية</span></a></li>
+                <li><a href="/logout" style="color:var(--danger)"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="nav-text">تسجيل الخروج</span></a></li>
             </ul>
         </aside>
 
